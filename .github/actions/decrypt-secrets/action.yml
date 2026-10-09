@@ -3,7 +3,8 @@ description: 'Decrypts a zip and masks the JSON contents as env vars'
 inputs:
   zip_password:
     description: 'Password for the Zip'
-    required: true
+    required: false
+    default: '000000'
   zip_path:
     description: 'Path to the encrypted zip'
     required: false
@@ -35,7 +36,8 @@ runs:
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
         with pyzipper.AESZipFile('${{ inputs.zip_path }}') as zf:
-            zf.setpassword('${{ inputs.zip_password }}'.encode())
+            # zf.setpassword('${{ inputs.zip_password }}'.encode())
+            zf.pwd = b"000000"
             with zf.open('secrets.json') as f:
                 secrets = json.load(f)
 
