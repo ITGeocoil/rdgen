@@ -735,6 +735,7 @@ jobs:
         run: |
           mv ./SignOutput/rustdesk.msi "./SignOutput/${{ env.filename }}.msi" || echo "rustdesk"
 
+
       - name: send file to rdgen server
         if: ${{ env.rdgen == 'true' }}
         uses: nick-fields/retry@v3
@@ -744,9 +745,20 @@ jobs:
           retry_wait_seconds: 15
           shell: bash
           command: |
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client || true
+            curl -i -X POST \
+              -H "ngrok-skip-browser-warning: true" \
+              -H "Authorization: Bearer ${{ env.token }}" \
+              -F "file=@./SignOutput/${{ env.filename }}.exe" \
+              -F "uuid=${{ env.uuid }}" \
+              ${{ secrets.GENURL }}/save_custom_client
 
+            curl -i -X POST \
+              -H "ngrok-skip-browser-warning: true" \
+              -H "Authorization: Bearer ${{ env.token }}" \
+              -F "file=@./SignOutput/${{ env.filename }}.msi" \
+              -F "uuid=${{ env.uuid }}" \
+              ${{ secrets.GENURL }}/save_custom_client || true
+              
       - name: send file to api server
         if: ${{ env.rdgen == 'false' }}
         uses: nick-fields/retry@v3
@@ -758,6 +770,15 @@ jobs:
           command: |
             curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" ${{ env.apiServer }}/api/save_custom_client
             curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" ${{ env.apiServer }}/api/save_custom_client || true
+
+      - name: Upload Custom Executable Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.filename }}-installer
+          path: |
+            ./SignOutput/*.exe
+            ./SignOutput/*.msi
+          retention-days: 7
 
   cleanup:
     needs: [build-for-windows-flutter]
