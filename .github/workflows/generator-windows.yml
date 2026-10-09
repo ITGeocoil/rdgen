@@ -444,19 +444,21 @@ jobs:
           retry_wait_seconds: 15
           shell: pwsh
           command: |
-            Invoke-WebRequest -Uri ${{ env.iconlink_url }}/get_png?filename=${{ env.iconlink_file }}"&"uuid=${{ env.iconlink_uuid }} -OutFile ./res/iconx.png 
-            mv ./res/icon.ico ./res/icon.ico.bak
-            mv ./res/icon.png ./res/icon.png.bak
-            mv ./res/tray-icon.ico ./res/tray-icon.ico.bak
-            mv ./res/iconx.png ./res/icon.png
-            mv ./res/32x32.png ./res/32x32.png.bak
-            mv ./res/64x64.png ./res/64x64.png.bak
-            mv ./res/128x128.png ./res/128x128.png.bak
-            mv ./res/128x128@2x.png ./res/128x128@2x.png.bak
-            # every size Windows asks for at 100-200% scaling, so it never rescales on the fly
+            # Scarica l'immagine passando l'header per bypassare la landing page di ngrok
+            Invoke-WebRequest -Headers @{"ngrok-skip-browser-warning"="true"; "User-Agent"="Mozilla/5.0"} -Uri "${{ env.iconlink_url }}/get_png?filename=${{ env.iconlink_file }}&uuid=${{ env.iconlink_uuid }}" -OutFile ./res/iconx.png
+
+            # Usa Copy-Item con -Force anziché move, così eventuali Retry non falliscono per file mancanti
+            Copy-Item ./res/icon.ico ./res/icon.ico.bak -Force -ErrorAction SilentlyContinue
+            Copy-Item ./res/icon.png ./res/icon.png.bak -Force -ErrorAction SilentlyContinue
+            Copy-Item ./res/tray-icon.ico ./res/tray-icon.ico.bak -Force -ErrorAction SilentlyContinue
+            Copy-Item ./res/iconx.png ./res/icon.png -Force
+            Copy-Item ./res/32x32.png ./res/32x32.png.bak -Force -ErrorAction SilentlyContinue
+            Copy-Item ./res/64x64.png ./res/64x64.png.bak -Force -ErrorAction SilentlyContinue
+            Copy-Item ./res/128x128.png ./res/128x128.png.bak -Force -ErrorAction SilentlyContinue
+            Copy-Item ./res/128x128@2x.png ./res/128x128@2x.png.bak -Force -ErrorAction SilentlyContinue
+
+            # Elaborazione delle icone con ImageMagick
             magick ./res/icon.png -define icon:auto-resize=256,128,96,64,48,40,32,24,20,16 ./res/icon.ico
-            # the tray decodes the largest entry of this file, so keep it a single 32x32 like upstream
-            # (a 256 entry here is shrunk to 16-24 px by the shell and comes out jagged)
             magick ./res/icon.png -resize 32x32 ./res/tray-icon.ico
             magick ./res/icon.png -resize 32x32 ./res/32x32.png
             magick ./res/icon.png -resize 64x64 ./res/64x64.png
@@ -608,7 +610,7 @@ jobs:
           shell: pwsh
           continue_on_error: true
           command: |
-            Invoke-WebRequest -Uri ${{ env.logolink_url }}/get_png?filename=${{ env.logolink_file }}"&"uuid=${{ env.logolink_uuid }} -OutFile ./rustdesk/data/flutter_assets/assets/logo.png
+            Invoke-WebRequest -Headers @{"ngrok-skip-browser-warning"="true"; "User-Agent"="Mozilla/5.0"} -Uri "${{ env.logolink_url }}/get_png?filename=${{ env.logolink_file }}&uuid=${{ env.logolink_uuid }}" -OutFile ./rustdesk/data/flutter_assets/assets/logo.png
 
       - name: find Runner.res
         # Windows: find Runner.res (compiled from ./flutter/windows/runner/Runner.rc), copy to ./Runner.res
